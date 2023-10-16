@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-deployment
+spec:
+  replicas: 4  # Указываем 4 реплики для отказоустойчивости
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+        - name: web-app
+          image: web-app-image:latest
+          resources:
+            requests:
+              cpu: 0.2  # Первым запросам приложению требуется больше ресурсов CPU
+              memory: "128Mi"  # Память всегда "ровно" 128М
+            limits:
+              cpu: 0.1  # Равномерное потребление CPU в районе 0.1
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /healthz  # Путь для проверки готовности
+              port: 8080  # Порт вашего приложения
+            initialDelaySeconds: 30  # Задержка перед первой проверкой
+            periodSeconds: 10  # Периодичность проверок
+            timeoutSeconds: 5  # Таймаут проверки
+          livenessProbe:
+            httpGet:
+              path: /healthz  # Путь для проверки жизнеспособности
+              port: 8080  # Порт вашего приложения
+            initialDelaySeconds: 30  # Задержка перед первой проверкой
+            periodSeconds: 10  # Периодичность проверок
+            timeoutSeconds: 5  # Таймаут проверки
+  strategy:
+    type: RollingUpdate  # Стратегия обновления подов
+    rollingUpdate:
+      maxSurge: 1  # Максимальное число дополнительных подов во время обновления
+      maxUnavailable: 1  # Максимальное число недоступных подов во время обновления
